@@ -36,7 +36,8 @@ def readFile(path):
     # trasforma in formato "normale" tra -1.0 e 1.0
     X = X_int/32768
 
-    #print('max abs amp input:', max(abs(X)))
+    #Uso np.amax invece di max. Non saprei dire perchè non funziona.
+    print('max abs amp input:', np.amax(abs(X)))
     
     return sr, X
 
@@ -54,7 +55,9 @@ def ms2smpls(t_ms, sr):
 
 def normalizza(Data):
 
-    return(Data / max(abs(Data)))
+    a = abs(Data)
+    m = np.amax(a)
+    return(Data / m)
   
          
 def disegna(Data, sr):
@@ -203,7 +206,7 @@ def writeFile(X,sr):
     Y = normalizza(X)
     
     #  stampa la massima ampiezza in valore assoluto
-    print('max abs amp output:', max(abs(Y)))
+    print('max abs amp output:', np.amax(abs(Y)))
     
     """
     # trasforma in 16 bit (opzionale, se non la metto salva a 32 bit float)
