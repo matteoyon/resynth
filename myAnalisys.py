@@ -44,24 +44,53 @@ def normalizza(Data):
     """
     return(Data / max(abs(Data)))
 
-
-def peakFind(Data, delta):
+def FFT(Data):
     """
     
 
     Parameters
     ----------
-    Arr : np.array
-        Array where to find the peaks
-    delta : threshold
+    Data : np.array
+        Audio to analyse in fft.
 
-    Modifies
-    --------
-    Arr : if a value is < of delta, this value is set to 0
+    Returns
+    -------
+    X_mod : np.array
+        FFT magnitude array normalized in [0, 1] range
+
+    """
+    pad = np.zeros(ceiledPow(len(Data))-len(Data))
+
+    X_pad = np.append(Data,pad)
+
+
+
+    #FFT
+    X_fft = np.fft.rfft(X_pad)
+    X_mod = normalizza(np.abs(X_fft))
+    
+    return X_mod
+
+
+def quadPeakFind(Data, delta, sr):
+    """
+    
+
+    Parameters
+    ----------
+    Data : np.array
+        FFT array where to find the peaks
+    
+    delta : threshold
+    
+    sr :
+        Sampling rate of the FFT array
+
     
     Returns
     -------
-    I : array of Index of the peaks
+    F : 2D np.array
+        2D array of the peaks [frequency, amplitude]
 
     """
     Arr = copy.deepcopy(Data)
@@ -72,10 +101,36 @@ def peakFind(Data, delta):
     
     Arr = np.concatenate(([0],Arr,[0])) # Add 0 in front and to the end of Arr to simplify conditions
     I = np.array([])
+    F = np.array([])
+    A = np.array([])
     
+    #finding local max
     for i in range(1,len(Arr)-1):
             if (Arr[i] > Arr[i+1]) and (Arr[i] > Arr[i-1]):
                     I = np.append(I,i-1)
     
-    return I
+    
+    #Quadratic interpolation for finding frequency
+    for i in range(len(I)):
+        j = int(I[i])
+        val = Data[j]
+        lval = Data[j-1]
+        rval = Data[j+1]        
+
+        
+        k = val+(0.5*(lval-rval)/(lval-2*val+rval))    #frame interpolation
+
+        f = (sr*k)/len(Data)                           #converting frame into frequency
+        a = val-0.25*(lval-rval)*(k-val)               #calculating amplitude
+        
+        #toAdd = np.array([f,a])
+        
+        F = np.append(F,f)
+        A = np.append(A,a)
+    
+    ToReturn = np.stack((F,A),axis=1)
+    
+    #print(ToReturn)
+        
+    return ToReturn
 

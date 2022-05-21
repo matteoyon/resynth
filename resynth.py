@@ -19,16 +19,22 @@ Main steps:
 """
 Problema: non capisco perchè (ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all())
 """
-import myUtilities as my
+import myUtilities as myU
+import myAnalisys as myA
 
+"""
 def main():
+"""  
+sr, X = myU.readFile('in.wav')
+
+Y = myA.FFT(X)
+Y = myA.quadPeakFind(Y, 0.01, sr)
+
+myU.writeFile(X, sr)
     
-    sr, X = my.readFile('in.wav');
-    
-    my.writeFile(X, sr);
-    
+"""    
     return
-    
+
 if __name__ == "__main__":
     main()
-    
+    """
