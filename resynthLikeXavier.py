@@ -305,20 +305,23 @@ def peakInterp(mX,ploc):
 
 #M = 501
 N = ceiledPow(len(X))
-t = 1
+t = 0.05
 
 pad = np.zeros(ceiledPow(len(X))-len(X))
 X_pad = np.append(X,pad)
 fftX = np.fft.fft(X_pad)
 mX = abs(fftX)
-ploc = peakDetection(mX,t)
-pmag = mX[ploc]
+mXnorm = normalizza(mX)
+
+ploc = peakDetection(mXnorm,t)
+
+iploc, ipmag = peakInterp(mXnorm, ploc)
 
 freqaxis = sr*np.arange(N/2)/float(N)
-plt.plot(freqaxis[:int(len(freqaxis))], mX[:int((N/2))])
-plt.plot(sr*ploc[:int(len(ploc)/2)]/float(N), pmag[:int(len(pmag)/2)], marker='x', linestyle = '')
+plt.plot(freqaxis[:int(len(freqaxis))], mXnorm[:int((N/2))])
+plt.plot(sr*iploc[:int(len(iploc)/2)]/float(N), ipmag[:int(len(ipmag)/2)], marker='x', linestyle = '')
 
-
+plt.show()
 
 ####### NON MODIFICARE ###########
 # NORMALIZZAZIONE ... paracadute
