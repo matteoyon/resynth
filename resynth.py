@@ -25,10 +25,10 @@ import myAnalisys as myA
 """
 def main():
 """  
-sr, X = myU.readFile('in.wav')
+sr, X = myU.readFile('10k.wav')
 
 Y = myA.FFT(X)
-Y = myA.quadPeakFind(Y, 0.01, sr)
+Z = myA.quadPeakFind(Y, 0.01, sr)
 
 myU.writeFile(X, sr)
     

@@ -118,16 +118,17 @@ def quadPeakFind(Data, delta, sr):
         rval = Data[j+1]        
 
         
-        k = val+(0.5*(lval-rval)/(lval-2*val+rval))    #frame interpolation
+        k = val+(0.5*(lval-rval)/(lval-(2*val)+rval))    #frame interpolation
 
-        f = (sr*k)/len(Data)                           #converting frame into frequency
+
+        f = (sr*Data[k])/len(Data)                           #converting frame into frequency
         a = val-0.25*(lval-rval)*(k-val)               #calculating amplitude
         
         #toAdd = np.array([f,a])
         
         F = np.append(F,f)
         A = np.append(A,a)
-    
+        
     ToReturn = np.stack((F,A),axis=1)
     
     #print(ToReturn)
