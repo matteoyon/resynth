@@ -202,9 +202,12 @@ def FFT(Data):
         FFT magnitude array normalized in [0, 1] range
 
     """
-    pad = np.zeros(ceiledPow(len(Data))-len(Data))
+    
+    Arr = copy.deepcopy(Data)
+    
+    pad = np.zeros(ceiledPow(len(Arr))-len(Arr))
 
-    X_pad = np.append(Data,pad)
+    X_pad = np.append(Arr,pad)
 
 
 
@@ -303,9 +306,9 @@ def peakInterp(mX,ploc):
 #################################
 # CHIAMATE LE VOSTRE FUNZIONI
 
-#M = 501
+
 N = ceiledPow(len(X))
-t = 0.05
+t = 0.1
 
 pad = np.zeros(ceiledPow(len(X))-len(X))
 X_pad = np.append(X,pad)
@@ -319,9 +322,13 @@ iploc, ipmag = peakInterp(mXnorm, ploc)
 
 freqaxis = sr*np.arange(N/2)/float(N)
 plt.plot(freqaxis[:int(len(freqaxis))], mXnorm[:int((N/2))])
-plt.plot(sr*iploc[:int(len(iploc)/2)]/float(N), ipmag[:int(len(ipmag)/2)], marker='x', linestyle = '')
+plt.plot(sr*iploc[:int(len(iploc)/(2))]/float(N), ipmag[:int(len(ipmag)/2)], marker='x', linestyle = '')
 
 plt.show()
+
+NonIModes = np.array([sr*ploc[:int(len(ploc)/2)]/float(N),normalizza(ipmag[:int(len(ipmag)/2)])]);
+
+Modes = np.array([sr*iploc[:int(len(iploc)/2)]/float(N),normalizza(ipmag[:int(len(ipmag)/2)])]);
 
 ####### NON MODIFICARE ###########
 # NORMALIZZAZIONE ... paracadute

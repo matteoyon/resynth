@@ -13,10 +13,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 import math
-import copy
 
 # USARE MONO 16 BIT WAV !!!!!
-sr, X_int = wavfile.read('10k.wav')
+sr, X_int = wavfile.read('inWithoutAtk.wav')
 
 print ("sr :", sr)
 
@@ -175,8 +174,7 @@ def ceiledPow(x):
 
     Parameters
     ----------
-    x : np.array
-        array to .
+    x : int
 
     Returns
     -------
@@ -186,109 +184,84 @@ def ceiledPow(x):
     """
     return 2**math.ceil(math.log(x,2))
 
+def peakDetection(mX, t):
+    """
+    Detect spectral peak locations
 
+    Parameters
+    ----------
+    mX : np.array
+        magnitude spectrum
+        
+    t : float
+        treshold.
 
-def FFT(Data):
+    Returns
+    -------
+    ploc : np.array
+        peak locations.
+
+    """
+    
+    tresh = np.where(mX[1:-1]>t, mX[1:-1], 0);              #locations above treshold
+    next_minor = np.where(mX[1:-1]>mX[2:], mX[1:-1], 0)     #locations higher than the next one
+    prev_minor = np.where(mX[1:-1]>mX[:-2], mX[1:-1], 0)    #locations higher than the previous one
+    ploc = tresh*next_minor*prev_minor                      #locaions with all the 3 criterias above
+    ploc = ploc.nonzero()[0] + 1                            #compensation
+    return ploc
+
+def peakInterp(mX,ploc):
     """
     
 
     Parameters
     ----------
-    Data : np.array
-        Audio to analyse in fft.
+    mX : np.array
+        magnitude spectrum
+    ploc : np.array
+        peaks locations
 
     Returns
     -------
-    X_mod : np.array
-        FFT magnitude array normalized in [0, 1] range
+    iploc : np.array
+        interpolated peak locations
+    ipmag : np.array
+        interpolated magnitude of intepolated peaks
 
     """
-    pad = np.zeros(ceiledPow(len(Data))-len(Data))
-
-    X_pad = np.append(Data,pad)
-
-
-
-    #FFT
-    X_fft = np.fft.fft(X_pad)
-    X_mod = normalizza(np.abs(X_fft))
-    
-    return X_mod
-
-
-def quadPeakFind(Data, delta, sr):
-    """
-    
-
-    Parameters
-    ----------
-    Data : np.array
-        FFT array where to find the peaks
-    
-    delta : threshold
-    
-    sr :
-        Sampling rate of the FFT array
-
-    
-    Returns
-    -------
-    F : 2D np.array
-        2D array of the peaks [frequency, amplitude]
-
-    """
-    Arr = copy.deepcopy(Data)
-    
-    for i in range(len(Arr)):
-        if Arr[i] < delta: #thresholding
-            Arr[i] = 0
-    
-    Arr = np.concatenate(([0],Arr,[0])) # Add 0 in front and to the end of Arr to simplify conditions
-    I = np.array([])
-    F = np.array([])
-    A = np.array([])
-    
-    #finding local max
-    for i in range(1,len(Arr)-1):
-            if (Arr[i] > Arr[i+1]) and (Arr[i] > Arr[i-1]):
-                    I = np.append(I,i-1)
-    
-    
-    #Quadratic interpolation for finding frequency
-    for i in range(len(I)):
-        j = int(I[i])
-        val = Data[j]
-        lval = Data[j-1]
-        rval = Data[j+1]        
-
-        
-        k = val+(0.5*(lval-rval)/(lval-(2*val)+rval))    #frame interpolation
-
-
-        f = (k*sr)#(sr*k)/len(Data)            #converting frame into frequency
-        a = val-0.25*(lval-rval)*(j-val)       #calculating amplitude
-        
-        #toAdd = np.array([f,a])
-        
-        F = np.append(F,f)
-        A = np.append(A,a)
-        
-    ToReturn = np.stack((F,A),axis=1)
-    
-    #print(ToReturn)
-        
-    return ToReturn
-
+    val = mX[ploc]
+    lval = mX[ploc-1]
+    rval = mX[ploc+1]
+    iploc = ploc + 0.5*(lval-rval)/(lval-2*val+rval)
+    ipmag = val - 0.25*(lval-rval)*(iploc-ploc)
+    return iploc, ipmag
 
 
 #################################
 # CHIAMATE LE VOSTRE FUNZIONI
 
-Y = FFT(X)
+N = ceiledPow(len(X))
+t = 0.1
 
-freqaxis = sr*np.arange(len(Y)/2)/float(len(Y))
+pad = np.zeros(ceiledPow(len(X))-len(X))
+X_pad = np.append(X,pad)
+fftX = np.fft.fft(X_pad)
+mX = abs(fftX)
+mXnorm = normalizza(mX)
 
-plt.plot(freqaxis,Y)
+ploc = peakDetection(mXnorm,t)
+
+iploc, ipmag = peakInterp(mXnorm, ploc)
+
+freqaxis = sr*np.arange(N/2)/float(N)
+plt.plot(freqaxis[:int(len(freqaxis))], mXnorm[:int((N/2))])
+plt.plot(sr*iploc[:int(len(iploc)/(2))]/float(N), ipmag[:int(len(ipmag)/2)], marker='x', linestyle = '')
+
+plt.show()
+
+NonIModes = np.array([sr*ploc[:int(len(ploc)/2)]/float(N),normalizza(ipmag[:int(len(ipmag)/2)])]);
+
+Modes = np.array([sr*iploc[:int(len(iploc)/2)]/float(N),normalizza(ipmag[:int(len(ipmag)/2)])]);
 
 
 
@@ -297,7 +270,7 @@ plt.plot(freqaxis,Y)
 #Y = normalizza(X)
 
 #  stampa la massima ampiezza in valore assoluto
-print('max abs amp output:', np.amax(abs(Y)))
+#print('max abs amp output:', np.amax(abs(Y)))
 
 """
 # trasforma in 16 bit (opzionale, se non la metto salva a 32 bit float)
@@ -310,6 +283,6 @@ wavfile.write("out.wav", sr, Y_int)
 #wavfile.write("out.wav", sr, Y)
 
 # disegna output (va posizionato qui altrimenti matplot lib blocca la prosecuzione in repl)
-disegna(Y, sr)
+#disegna(Y, sr)
 
 #################################
