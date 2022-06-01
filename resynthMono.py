@@ -15,13 +15,14 @@ from scipy.io import wavfile
 import math
 
 # USARE MONO 16 BIT WAV !!!!!
-sr, X_int = wavfile.read('inWithoutAtk.wav')
+sr, X_int = wavfile.read('inMono.wav')
+srw, W_int = wavfile.read('WHITE.wav')
 
 print ("sr :", sr)
 
 # trasforma in formato "normale" tra -1.0 e 1.0
 X = X_int/32768
-
+W = W_int/32768
 print('max abs amp input:', np.amax(abs(X)))
 
 ####### UTILITA' VARIE #################
@@ -99,6 +100,51 @@ def lowPass(DataIn, sr, fc):
         y = a0 * x  - b1 * y1 
 
         # update memories
+        y1 = y
+ 
+        DataOut[i] = y
+        
+    return DataOut
+
+def myReson(DataIn, sr, fc, bw):
+    
+    """
+	I° order low pass filter
+	
+    Inputs:
+        DataIn: input numpy array
+        sr: sampling rate
+        fc: filter frequency cut (@ -3dB)
+    Output:
+        DataOut: filter output
+    """
+    # init output buffer
+    DataOut = np.zeros(len(DataIn))
+    
+    # filter coefs - Pirkle pag 169
+    thetaC = 2.0 *  np.pi * fc / sr
+    b2 = math.exp(-2.0 * np.pi * (bw/sr))
+    b1 = (-4.0 * b2 / (1 + b2) ) * np.cos(thetaC)
+    a0 = 1.0 - np.sqrt(b2)
+    a2 = -a0
+    
+    # init memories
+    y1 = 0
+    y2 = 0
+    x1 = 0
+    x2 = 0
+
+    for i in range(len(DataIn)):       
+        x = DataIn[i]
+        
+        # eq LP filter    
+        # y[n] = a0 * x[n]  + a2 * x[n-2] - b1 * y[n-1] - b2 * y[n-2]
+        y = a0 * x  + a2 * x2 - b1 * y1 - b2 * y2
+
+        # update memories
+        x2 = x1
+        x1 = x
+        y2 = y1
         y1 = y
  
         DataOut[i] = y
@@ -240,6 +286,7 @@ def peakInterp(mX,ploc):
 #################################
 # CHIAMATE LE VOSTRE FUNZIONI
 
+#X = X[1000:1512]
 N = ceiledPow(len(X))
 t = 0.1
 
@@ -264,13 +311,16 @@ NonIModes = np.array([sr*ploc[:int(len(ploc)/2)]/float(N),normalizza(ipmag[:int(
 Modes = np.array([sr*iploc[:int(len(iploc)/2)]/float(N),normalizza(ipmag[:int(len(ipmag)/2)])]);
 
 
+W = myReson(W,srw,440,1)
+
+X = W
 
 ####### NON MODIFICARE ###########
 # NORMALIZZAZIONE ... paracadute
-#Y = normalizza(X)
+Y = normalizza(X)
 
 #  stampa la massima ampiezza in valore assoluto
-#print('max abs amp output:', np.amax(abs(Y)))
+print('max abs amp output:', np.amax(abs(Y)))
 
 """
 # trasforma in 16 bit (opzionale, se non la metto salva a 32 bit float)
@@ -280,9 +330,9 @@ wavfile.write("out.wav", sr, Y_int)
 """
 
 # scrivi File su disco float 32
-#wavfile.write("out.wav", sr, Y)
+wavfile.write("out.wav", sr, Y)
 
 # disegna output (va posizionato qui altrimenti matplot lib blocca la prosecuzione in repl)
-#disegna(Y, sr)
+disegna(Y, sr)
 
 #################################
